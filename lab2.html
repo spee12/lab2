@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ru">
   <head>
-    <meta charset="utf-8">
-    <title>Кубики с выпуклыми цифрами</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8" />
+    <title>Кубики с цифрами</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
       body { margin: 0; overflow: hidden; background: #d3d3d3; }
       canvas { display: block; }
@@ -11,10 +11,11 @@
   </head>
   <body>
     <script type="module">
-      import * as THREE from 'https://threejs.org/build/three.module.js';
-      import { OrbitControls } from 'https://threejs.org/examples/jsm/controls/OrbitControls.js';
-      import { FontLoader } from 'https://threejs.org/examples/jsm/loaders/FontLoader.js';
-      import { TextGeometry } from 'https://threejs.org/examples/jsm/geometries/TextGeometry.js';
+      import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js";
+      import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/controls/OrbitControls.js";
+      import { FontLoader } from "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/loaders/FontLoader.js";
+      import { TextGeometry } from "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/geometries/TextGeometry.js";
+      import { RoundedBoxGeometry } from "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/geometries/RoundedBoxGeometry.js";
 
       let scene, camera, renderer, controls;
 
@@ -35,14 +36,14 @@
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
-        const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+        const ambient = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(ambient);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(5, 10, 7);
-        scene.add(dirLight);
+        const light = new THREE.DirectionalLight(0xffffff, 0.9);
+        light.position.set(4, 10, 8);
+        scene.add(light);
 
-        // Плоскость
+        // Плоскость под кубами
         const planeGeom = new THREE.PlaneGeometry(1000, 1000);
         const planeMat = new THREE.MeshPhongMaterial({ color: 0xbcbcbc });
         const plane = new THREE.Mesh(planeGeom, planeMat);
@@ -50,26 +51,31 @@
         plane.position.y = -100;
         scene.add(plane);
 
-        // Загрузка шрифта
+        // Загружаем шрифт и создаём кубики
         const loader = new FontLoader();
-        loader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function (font) {
-          createDice(font, -120, 0);
-          createDice(font, 120, 0);
-        });
+        loader.load(
+          "https://threejs.org/examples/fonts/helvetiker_bold.typeface.json",
+          (font) => {
+            createDice(font, -130, 0);
+            createDice(font, 130, 0);
+          },
+          undefined,
+          (err) => console.error("Ошибка загрузки шрифта:", err)
+        );
 
-        window.addEventListener('resize', onWindowResize);
+        window.addEventListener("resize", onWindowResize);
       }
 
       function createDice(font, x, z) {
         const cubeSize = 200;
-        const cubeGeom = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+        const cubeGeom = new RoundedBoxGeometry(cubeSize, cubeSize, cubeSize, 6, 20);
         const cubeMat = new THREE.MeshPhongMaterial({ color: 0xaee16e });
         const cube = new THREE.Mesh(cubeGeom, cubeMat);
         cube.position.set(x, cubeSize / 2 - 100, z);
         scene.add(cube);
 
         const textMat = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-        const positions = [
+        const faces = [
           [0, 0, cubeSize / 2 + 1, 0], // front
           [0, 0, -cubeSize / 2 - 1, Math.PI], // back
           [cubeSize / 2 + 1, 0, 0, -Math.PI / 2], // right
@@ -82,27 +88,21 @@
           const textGeo = new TextGeometry(String(i), {
             font: font,
             size: 60,
-            height: 10, // выступание наружу
+            height: 10,
             curveSegments: 8,
           });
-
           textGeo.computeBoundingBox();
-          const centerOffsetX = -0.5 * (textGeo.boundingBox.max.x - textGeo.boundingBox.min.x);
-          const centerOffsetY = -0.5 * (textGeo.boundingBox.max.y - textGeo.boundingBox.min.y);
-
+          const offsetX = -0.5 * (textGeo.boundingBox.max.x - textGeo.boundingBox.min.x);
+          const offsetY = -0.5 * (textGeo.boundingBox.max.y - textGeo.boundingBox.min.y);
           const textMesh = new THREE.Mesh(textGeo, textMat);
-          textMesh.position.set(centerOffsetX, centerOffsetY, 0);
-
+          textMesh.position.set(offsetX, offsetY, 0);
           const group = new THREE.Group();
           group.add(textMesh);
-
-          const [px, py, pz, ry = 0, rx = 0, rz = 0] = positions[i - 1];
+          const [px, py, pz, ry = 0, rx = 0, rz = 0] = faces[i - 1];
           group.position.set(px, py, pz);
           group.rotation.set(rx, ry, rz);
-
           cube.add(group);
         }
-
         scene.add(cube);
       }
 
