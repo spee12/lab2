@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <title>Кубики с выпуклыми цифрами</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      body { margin: 0; overflow: hidden; background: #d3d3d3; }
+      canvas { display: block; }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import * as THREE from 'https://threejs.org/build/three.module.js';
+      import { OrbitControls } from 'https://threejs.org/examples/jsm/controls/OrbitControls.js';
+      import { FontLoader } from 'https://threejs.org/examples/jsm/loaders/FontLoader.js';
+      import { TextGeometry } from 'https://threejs.org/examples/jsm/geometries/TextGeometry.js';
+
+      let scene, camera, renderer, controls;
+
+      init();
+      animate();
+
+      function init() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xd3d3d3);
+
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.set(400, 300, 500);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambient);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+
+        // Плоскость
+        const planeGeom = new THREE.PlaneGeometry(1000, 1000);
+        const planeMat = new THREE.MeshPhongMaterial({ color: 0xbcbcbc });
+        const plane = new THREE.Mesh(planeGeom, planeMat);
+        plane.rotation.x = -Math.PI / 2;
+        plane.position.y = -100;
+        scene.add(plane);
+
+        // Загрузка шрифта
+        const loader = new FontLoader();
+        loader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function (font) {
+          createDice(font, -120, 0);
+          createDice(font, 120, 0);
+        });
+
+        window.addEventListener('resize', onWindowResize);
+      }
+
+      function createDice(font, x, z) {
+        const cubeSize = 200;
+        const cubeGeom = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+        const cubeMat = new THREE.MeshPhongMaterial({ color: 0xaee16e });
+        const cube = new THREE.Mesh(cubeGeom, cubeMat);
+        cube.position.set(x, cubeSize / 2 - 100, z);
+        scene.add(cube);
+
+        const textMat = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+        const positions = [
+          [0, 0, cubeSize / 2 + 1, 0], // front
+          [0, 0, -cubeSize / 2 - 1, Math.PI], // back
+          [cubeSize / 2 + 1, 0, 0, -Math.PI / 2], // right
+          [-cubeSize / 2 - 1, 0, 0, Math.PI / 2], // left
+          [0, cubeSize / 2 + 1, 0, -Math.PI / 2, 0, 0], // top
+          [0, -cubeSize / 2 - 1, 0, Math.PI / 2, 0, 0], // bottom
+        ];
+
+        for (let i = 1; i <= 6; i++) {
+          const textGeo = new TextGeometry(String(i), {
+            font: font,
+            size: 60,
+            height: 10, // выступание наружу
+            curveSegments: 8,
+          });
+
+          textGeo.computeBoundingBox();
+          const centerOffsetX = -0.5 * (textGeo.boundingBox.max.x - textGeo.boundingBox.min.x);
+          const centerOffsetY = -0.5 * (textGeo.boundingBox.max.y - textGeo.boundingBox.min.y);
+
+          const textMesh = new THREE.Mesh(textGeo, textMat);
+          textMesh.position.set(centerOffsetX, centerOffsetY, 0);
+
+          const group = new THREE.Group();
+          group.add(textMesh);
+
+          const [px, py, pz, ry = 0, rx = 0, rz = 0] = positions[i - 1];
+          group.position.set(px, py, pz);
+          group.rotation.set(rx, ry, rz);
+
+          cube.add(group);
+        }
+
+        scene.add(cube);
+      }
+
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+    </script>
+  </body>
+</html>
